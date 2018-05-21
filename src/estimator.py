@@ -1,6 +1,7 @@
 import itertools
 import logging
 import math
+import json
 from collections import namedtuple
 
 import cv2
@@ -63,6 +64,9 @@ class Human:
     def __str__(self):
         return ' '.join([str(x) for x in self.body_parts.values()])
 
+    def to_dict(self):
+        return { "parts": list(map(lambda x: x.to_dict() ,self.body_parts.values())) }
+
 
 class BodyPart:
     """
@@ -83,6 +87,9 @@ class BodyPart:
 
     def __str__(self):
         return 'BodyPart:%d-(%.2f, %.2f) score=%.2f' % (self.part_idx, self.x, self.y, self.score)
+
+    def to_dict(self):
+        return {"id": self.part_idx, "x": self.x, "y": self.y, "score": self.score}
 
 
 class PoseEstimator:
