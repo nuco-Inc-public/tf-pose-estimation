@@ -4,6 +4,5 @@ scipy
 tqdm
 requests
 fire
-ast
 dill
 git+https://github.com/ppwwyyxx/tensorpack.git
