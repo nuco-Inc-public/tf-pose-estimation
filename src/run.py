@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--scales', type=str, default='[None]', help='for multiple scales, eg. [1.0, (1.1, 0.05)]')
     parser.add_argument('--rest', help='launch RestAPI.', action='store_true')
     parser.add_argument('--port', type=int, default=8080, help='port number.')
-    parser.add_argument('--host', type=str, default='localhost', help='host name.')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='host name.')
     args = parser.parse_args()
     scales = ast.literal_eval(args.scales)
 

@@ -69,8 +69,8 @@ def get_network(type, placeholder_input, sess_for_load=None, trainable=True):
 
 def get_graph_path(model_name):
     dyn_graph_path = {
-        'cmu': './models/graph/cmu/graph_opt.pb',
-        'mobilenet_thin': './models/graph/mobilenet_thin/graph_opt.pb'
+        'cmu': '../models/graph/cmu/graph_opt.pb',
+        'mobilenet_thin': '../models/graph/mobilenet_thin/graph_opt.pb'
     }
     graph_path = dyn_graph_path[model_name]
     for path in (graph_path, os.path.join(os.path.dirname(os.path.abspath(__file__)), graph_path), os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', graph_path)):
