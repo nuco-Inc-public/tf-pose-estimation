@@ -38,6 +38,25 @@ def index():
     humans = e.inference(img, scales=scales)
     return jsonify({ "humans" : list(map(lambda x: x.to_dict(), humans)) })
 
+
+@app.route('/joint', methods=['POST'])
+def joint():
+    data = request.data
+    with open('/tmp/temp.jpg', 'wb') as f:
+        f.write(data)
+    img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
+    scales = ast.literal_eval(args.scales)
+    humans = e.inference(img, scales=scales)
+    image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
+    b_str = base64.b64encode(img2bytes(image)).decode('utf-8')
+    return jsonify({ "image" : b_str })
+
+
+def img2bytes(img):
+  f = io.BytesIO()
+  img.save(f, format='JPEG')
+  return f.getvalue()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='tf-pose-estimation run')
     parser.add_argument('--image', type=str, default='../images/p1.jpg')
