@@ -30,26 +30,32 @@ app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def index():
-    data = request.data
-    with open('/tmp/temp.jpg', 'wb') as f:
-        f.write(data)
-    img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
-    scales = ast.literal_eval(args.scales)
-    humans = e.inference(img, scales=scales)
-    return jsonify({ "humans" : list(map(lambda x: x.to_dict(), humans)) })
+    try:
+        data = request.data
+        with open('/tmp/temp.jpg', 'wb') as f:
+            f.write(data)
+        img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
+        scales = ast.literal_eval(args.scales)
+        humans = e.inference(img, scales=scales)
+        return jsonify({ "humans" : list(map(lambda x: x.to_dict(), humans)) })
+    except Exception as e:
+        jsonify({ "error": str(e) })
 
 
 @app.route('/joint', methods=['POST'])
 def joint():
-    data = request.data
-    with open('/tmp/temp.jpg', 'wb') as f:
-        f.write(data)
-    img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
-    scales = ast.literal_eval(args.scales)
-    humans = e.inference(img, scales=scales)
-    image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
-    b_str = base64.b64encode(img2bytes(image)).decode('utf-8')
-    return jsonify({ "image" : b_str })
+    try:
+        data = request.data
+        with open('/tmp/temp.jpg', 'wb') as f:
+            f.write(data)
+        img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
+        scales = ast.literal_eval(args.scales)
+        humans = e.inference(img, scales=scales)
+        image = TfPoseEstimator.draw_humans(img, humans, imgcopy=False)
+        b_str = base64.b64encode(img2bytes(image)).decode('utf-8')
+        return jsonify({ "image" : b_str })
+    except Exception as e:
+        jsonify({ "error": str(e) })
 
 
 def img2bytes(img):
