@@ -2,6 +2,7 @@ import argparse
 import logging
 import time
 import ast
+import io
 import traceback
 import common
 import cv2
@@ -36,6 +37,7 @@ def index():
             f.write(data)
         img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
         scales = ast.literal_eval(args.scales)
+        e = TfPoseEstimator(get_graph_path(args.model), target_size=(w, h))
         humans = e.inference(img, scales=scales)
         return jsonify({ "humans" : list(map(lambda x: x.to_dict(), humans)) })
     except Exception as e:
@@ -50,9 +52,10 @@ def joint():
             f.write(data)
         img = common.read_imgfile('/tmp/temp.jpg', 432, 368)
         scales = ast.literal_eval(args.scales)
+        e = TfPoseEstimator(get_graph_path(args.model), target_size=(w, h))
         humans = e.inference(img, scales=scales)
         image = TfPoseEstimator.draw_humans(img, humans, imgcopy=False)
-        b_str = base64.b64encode(img2bytes(image)).decode('utf-8')
+        b_str = base64.b64encode(img2bytes(Image.fromarray(image))).decode('utf-8')
         return jsonify({ "image" : b_str })
     except Exception as e:
         return jsonify({ "error": str(traceback.format_exc()) })
