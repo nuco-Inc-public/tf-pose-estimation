@@ -2,7 +2,7 @@ import argparse
 import logging
 import time
 import ast
-
+import traceback
 import common
 import cv2
 import numpy as np
@@ -39,7 +39,7 @@ def index():
         humans = e.inference(img, scales=scales)
         return jsonify({ "humans" : list(map(lambda x: x.to_dict(), humans)) })
     except Exception as e:
-        return jsonify({ "error": str(e) })
+        return jsonify({ "error": str(traceback.format_exc()) })
 
 
 @app.route('/joint', methods=['POST'])
@@ -55,7 +55,7 @@ def joint():
         b_str = base64.b64encode(img2bytes(image)).decode('utf-8')
         return jsonify({ "image" : b_str })
     except Exception as e:
-        return jsonify({ "error": str(e) })
+        return jsonify({ "error": str(traceback.format_exc()) })
 
 
 def img2bytes(img):
