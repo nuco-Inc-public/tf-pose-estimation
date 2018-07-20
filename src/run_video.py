@@ -18,7 +18,7 @@ logger.addHandler(ch)
 
 fps_time = 0
 
-stringToBool(input_str):
+def stringToBool(input_str):
     if input_str.lower() in ('true', '1'):
         return True
     elif input_str.lower() in ('false', '0'):
@@ -42,28 +42,38 @@ if __name__ == '__main__':
     #logger.debug('cam read+')
     #cam = cv2.VideoCapture(args.camera)
     cap = cv2.VideoCapture(args.video)
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    out = None
     #ret_val, image = cap.read()
     #logger.info('cam image=%dx%d' % (image.shape[1], image.shape[0]))
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
+    logger.info('file read start')
     while(cap.isOpened()):
         ret_val, image = cap.read()
+        
+        if ret_val:
+            h, w = image.shape[:2]
+            humans = e.inference(image)
+            if args.showBG == False: image = np.zeros(image.shape)
+            image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
 
-
-        humans = e.inference(image)
-        if args.showBG == False: image = np.zeros(image.shape)
-        image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
-
-        #logger.debug('show+')
-        cv2.putText(image,
-                    "FPS: %f" % (1.0 / (time.time() - fps_time)),
-                    (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    (0, 255, 0), 2)
-        cv2.imshow('tf-pose-estimation result', image)
-        fps_time = time.time()
-        if cv2.waitKey(1) == 27:
+            #logger.debug('show+')
+            cv2.putText(image,
+                        "FPS: %f" % (1.0 / (time.time() - fps_time)),
+                        (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 0), 2)
+            # cv2.imshow('tf-pose-estimation result', image)
+            if not out:
+                out = cv2.VideoWriter('../images/output5.avi', fourcc, 15.0, (w, h))
+            out.write(image)
+            fps_time = time.time()
+            if cv2.waitKey(1) == 27:
+                break
+        else:
             break
-
-
+    logger.info('file read finished')
+    cap.release()
+    out.release()
     cv2.destroyAllWindows()
 logger.debug('finished+')
