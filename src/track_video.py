@@ -18,11 +18,102 @@ logger.addHandler(ch)
 
 fps_time = 0
 
+class Target(object):
+
+    def __init__(self, human, number):
+        self.human = human
+        self.number = number
+
+    
+    def d(self, human):
+        def _d(bp1, bp2):
+            return ((bp1.x - bp2.x)**2 + (bp1.y - bp2.y)**2)**0.5
+        indices = set(self.human.body_parts.keys()) & set(human.body_parts.keys())
+        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices)
+        return avg_d
+
+
+def connect(humans, previous_targets):
+    print('connect start!!!')
+    hs = humans
+    m = np.array([np.array([p.d(h) for p in previous_targets]) for h in humans])
+    targets = []
+    for k, h in enumerate(hs):
+        if not previous_targets:
+            targets.append(Target(h, k))
+            continue
+        i, j = min_element(m)
+        print('connect to previous number: {}'.format(previous_targets[j].number))
+        targets.append(Target(humans[i], previous_targets[j].number))
+        m = submatrix(m, i, j)
+        humans = list(map(lambda t: t[1], filter(lambda t: t[0] != i, enumerate(humans))))
+        previous_targets = list(map(lambda t: t[1], filter(lambda t: t[0] != j, enumerate(previous_targets))))
+        print(hs)
+        print(humans)
+    return targets
+
+
+def min_element(m):
+    return (0, 0) if m.size == 0 else np.unravel_index(np.argmin(m, axis=None), m.shape)
+
+
+def submatrix(m, i, j):
+    m = list(map(lambda m: np.concatenate([m[:i], m[i+1:]]), m))
+    m = list(filter(lambda t: t[0] != j, enumerate(m)))
+    m = list(map(lambda x: x[1], m))
+    return np.array(m)
+
+
+def replace2(m, i, j):
+    if m.size == 0:
+        return m
+    m[i, :] = 2
+    m[:, j] = 2
+    return m
+
+
 def stringToBool(input_str):
     if input_str.lower() in ('true', '1'):
         return True
     elif input_str.lower() in ('false', '0'):
         return False
+
+
+def draw_numbers(image, targets):
+    if not targets:
+        return image
+    image_h, image_w = image.shape[:2]
+    for t in targets:
+        human = t.human
+        min_key = sorted(human.body_parts.keys())[0]
+        center = (int(human.body_parts[min_key].x * image_w + 0.5), int(human.body_parts[min_key].y * image_h + 0.5))
+        cv2.putText(image, str(t.number + 1), center, cv2.FONT_HERSHEY_SIMPLEX, 4,(255,255,255),2,cv2.LINE_AA)
+    return image
+
+
+def sort_humans(humans, previous_humans):
+    if not previous_humans:
+        previous_humans = humans
+        return humans, previous_humans
+
+    if not humans:
+        return humans, previous_humans
+
+    tmp = humans
+    sorted_humans = []
+    for p in previous_humans:
+        p_min_key = sorted(p.body_parts.keys())[0]
+        p_dict = {}
+        p_vector = np.array([p.body_parts[p_min_key].x, p.body_parts[p_min_key].y])
+        for h in humans:
+            h_min_key = sorted(h.body_parts.keys())[0]
+            h_vector = np.array([h.body_parts[h_min_key].x, h.body_parts[h_min_key].y])
+            p_dict[h] = np.linalg.norm(p_vector - h_vector)
+        print(sorted({v:k for k, v in p_dict.items()}.items(), key=lambda x: x[0])[0])
+        sorted_humans.append(sorted({v:k for k, v in p_dict.items()}.items(), key=lambda x: x[0])[0])
+    humans = list(map(lambda x: x[1], sorted(sorted_humans, key=lambda x: x[0])))
+    print(humans)
+    return humans, tmp
 
 
 if __name__ == '__main__':
@@ -39,11 +130,11 @@ if __name__ == '__main__':
     logger.debug('initialization %s : %s' % (args.model, get_graph_path(args.model)))
     w, h = model_wh(args.resolution)
     e = TfPoseEstimator(get_graph_path(args.model), target_size=(w, h))
-    #logger.debug('cam read+')
-    #cam = cv2.VideoCapture(args.camera)
     cap = cv2.VideoCapture(args.video)
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     out = None
+    targets = None
+    previous_targets = []
     #ret_val, image = cap.read()
     #logger.info('cam image=%dx%d' % (image.shape[1], image.shape[0]))
     if (cap.isOpened()== False):
@@ -55,23 +146,23 @@ if __name__ == '__main__':
         if ret_val:
             h, w = image.shape[:2]
             humans = e.inference(image)
-            print(humans)
 
-            # if args.showBG == False: image = np.zeros(image.shape)
-            # image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
-
-            # #logger.debug('show+')
-            # cv2.putText(image,
-            #             "FPS: %f" % (1.0 / (time.time() - fps_time)),
-            #             (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-            #             (0, 255, 0), 2)
-            # # cv2.imshow('tf-pose-estimation result', image)
-            # if not out:
-            #     out = cv2.VideoWriter('../images/output5.avi', fourcc, 15.0, (w, h))
-            # out.write(image)
-            # fps_time = time.time()
-            # if cv2.waitKey(1) == 27:
-            #     break
+            if args.showBG == False: image = np.zeros(image.shape)
+            image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
+            targets = connect(humans, previous_targets)
+            image = draw_numbers(image, targets)
+            logger.debug('show+')
+            cv2.putText(image,
+                        "FPS: %f" % (1.0 / (time.time() - fps_time)),
+                        (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 0), 2)
+            previous_targets = targets
+            if not out:
+                out = cv2.VideoWriter('../images/output9.avi', fourcc, 15.0, (w, h))
+            out.write(image)
+            fps_time = time.time()
+            if cv2.waitKey(1) == 27:
+                break
         else:
             break
     logger.info('file read finished')

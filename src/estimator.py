@@ -318,8 +318,8 @@ class TfPoseEstimator:
 
                 #npimg = cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
                 cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
-                print(centers[pair[0]], centers[pair[1]])
-                print(body_part.x,body_part.y)
+                # print(centers[pair[0]], centers[pair[1]])
+                # print(body_part.x,body_part.y)
         return npimg
 
     def _get_scaled_img(self, npimg, scale):
