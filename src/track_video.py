@@ -1,6 +1,7 @@
 import argparse
 import logging
 import time
+from collections import deque
 
 import cv2
 import numpy as np
@@ -29,7 +30,7 @@ class Target(object):
         def _d(bp1, bp2):
             return ((bp1.x - bp2.x)**2 + (bp1.y - bp2.y)**2)**0.5
         indices = set(self.human.body_parts.keys()) & set(human.body_parts.keys())
-        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices) if len(indices) != 0 else 2 #np.sqrt(2)
+        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices) if len(indices) != 0 else 0 #np.sqrt(2)
         return avg_d
 
 
@@ -110,6 +111,7 @@ if __name__ == '__main__':
     out = None
     targets = None
     previous_targets = []
+    targets_stock = deque([])
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
     logger.info('file read start')
@@ -123,6 +125,17 @@ if __name__ == '__main__':
             if args.showBG == False: image = np.zeros(image.shape)
             image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
             targets = connect(humans, previous_targets)
+
+            # 最大5フレーム分のtargetsを保管しておく
+            if len(targets_stock) == 5: targets_stock.popleft()
+            targets_stock.append(targets)
+
+            for stock in deque(reversed(targets_stock)):
+                # 人数が減っていたら過去の検出情報を採用する
+                if len(targets) >= len(stock): continue
+                targets = stock
+                break
+
             image = draw_numbers(image, targets)
             logger.debug('show+')
             cv2.putText(image,
@@ -131,7 +144,7 @@ if __name__ == '__main__':
                         (0, 255, 0), 2)
             previous_targets = targets
             if not out:
-                out = cv2.VideoWriter('../images/output11.avi', fourcc, 15.0, (w, h))
+                out = cv2.VideoWriter('../images/output12.avi', fourcc, 15.0, (w, h))
             out.write(image)
             fps_time = time.time()
             if cv2.waitKey(1) == 27:
