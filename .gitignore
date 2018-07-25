@@ -105,6 +105,13 @@ ENV/
 *.npy
 timeline*.json
 
+# videos
+*.avi
+*.mp4
+
+# DS_Store
+.DS_Store
+
 tmp
 models/graph/cmu*/*.pb
 models/trained/*/checkpoint

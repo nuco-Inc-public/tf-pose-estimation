@@ -29,7 +29,7 @@ class Target(object):
         def _d(bp1, bp2):
             return ((bp1.x - bp2.x)**2 + (bp1.y - bp2.y)**2)**0.5
         indices = set(self.human.body_parts.keys()) & set(human.body_parts.keys())
-        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices)
+        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices) if len(indices) != 0 else 2 #np.sqrt(2)
         return avg_d
 
 
@@ -40,16 +40,16 @@ def connect(humans, previous_targets):
     targets = []
     for k, h in enumerate(hs):
         if not previous_targets:
+            print('previous target is empty')
             targets.append(Target(h, k))
             continue
         i, j = min_element(m)
         print('connect to previous number: {}'.format(previous_targets[j].number))
+        
         targets.append(Target(humans[i], previous_targets[j].number))
         m = submatrix(m, i, j)
         humans = list(map(lambda t: t[1], filter(lambda t: t[0] != i, enumerate(humans))))
         previous_targets = list(map(lambda t: t[1], filter(lambda t: t[0] != j, enumerate(previous_targets))))
-        print(hs)
-        print(humans)
     return targets
 
 
@@ -58,8 +58,8 @@ def min_element(m):
 
 
 def submatrix(m, i, j):
-    m = list(map(lambda m: np.concatenate([m[:i], m[i+1:]]), m))
-    m = list(filter(lambda t: t[0] != j, enumerate(m)))
+    m = list(map(lambda x: np.concatenate([x[:j], x[j+1:]]), m))
+    m = list(filter(lambda t: t[0] != i, enumerate(m)))
     m = list(map(lambda x: x[1], m))
     return np.array(m)
 
@@ -91,31 +91,6 @@ def draw_numbers(image, targets):
     return image
 
 
-def sort_humans(humans, previous_humans):
-    if not previous_humans:
-        previous_humans = humans
-        return humans, previous_humans
-
-    if not humans:
-        return humans, previous_humans
-
-    tmp = humans
-    sorted_humans = []
-    for p in previous_humans:
-        p_min_key = sorted(p.body_parts.keys())[0]
-        p_dict = {}
-        p_vector = np.array([p.body_parts[p_min_key].x, p.body_parts[p_min_key].y])
-        for h in humans:
-            h_min_key = sorted(h.body_parts.keys())[0]
-            h_vector = np.array([h.body_parts[h_min_key].x, h.body_parts[h_min_key].y])
-            p_dict[h] = np.linalg.norm(p_vector - h_vector)
-        print(sorted({v:k for k, v in p_dict.items()}.items(), key=lambda x: x[0])[0])
-        sorted_humans.append(sorted({v:k for k, v in p_dict.items()}.items(), key=lambda x: x[0])[0])
-    humans = list(map(lambda x: x[1], sorted(sorted_humans, key=lambda x: x[0])))
-    print(humans)
-    return humans, tmp
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='tf-pose-estimation Video')
     parser.add_argument('--video', type=str, default='')
@@ -135,8 +110,6 @@ if __name__ == '__main__':
     out = None
     targets = None
     previous_targets = []
-    #ret_val, image = cap.read()
-    #logger.info('cam image=%dx%d' % (image.shape[1], image.shape[0]))
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
     logger.info('file read start')
@@ -158,7 +131,7 @@ if __name__ == '__main__':
                         (0, 255, 0), 2)
             previous_targets = targets
             if not out:
-                out = cv2.VideoWriter('../images/output9.avi', fourcc, 15.0, (w, h))
+                out = cv2.VideoWriter('../images/output11.avi', fourcc, 15.0, (w, h))
             out.write(image)
             fps_time = time.time()
             if cv2.waitKey(1) == 27:
