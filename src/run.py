@@ -81,7 +81,7 @@ if __name__ == '__main__':
     w, h = model_wh(args.resolution)
     e = TfPoseEstimator(get_graph_path(args.model), target_size=(w, h))
     if args.rest:
-        app.run(debug=True, host=args.host, port=args.port)
+        app.run(debug=True, host=args.host, port=args.port, threaded=True)
     else:
         # estimate human poses from a single image !
         image = common.read_imgfile(args.image, None, None)
