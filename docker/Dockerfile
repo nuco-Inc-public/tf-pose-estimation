@@ -2,12 +2,15 @@ FROM ubuntu:16.04
 
 #ENV http_proxy=http://10.41.249.28:8080 https_proxy=http://10.41.249.28:8080
 
-RUN apt-get update -yq && apt-get install -yq build-essential cmake git pkg-config wget zip && \
+RUN apt-get update -yq && apt-get install -yq build-essential cmake git pkg-config wget zip unzip && \
 apt-get install -yq libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev && \
 apt-get install -yq libavcodec-dev libavformat-dev libswscale-dev libv4l-dev && \
-apt-get install -yq libgtk2.0-dev && \
+apt-get install -yq libgtk-3-dev && \
 apt-get install -yq libatlas-base-dev gfortran libgtk2.0-0 libsm6 && \
 apt-get install -yq python3 python3-dev python3-pip python3-setuptools python3-tk git && \
+apt-get install -yq ffmpeg qtbase5-dev libopencv-dev libgtk-3-dev libdc1394-22 libdc1394-22-dev && \
+apt-get install -yq libxine2-dev libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev libtbb-dev libfaac-dev && \
+apt-get install -yq libmp3lame-dev libopencore-amrnb-dev libopencore-amrwb-dev libtheora-dev libvorbis-dev libxvidcore-dev v4l-utils && \
 apt-get remove -yq python-pip python3-pip && wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
 pip3 install numpy opencv-python
 

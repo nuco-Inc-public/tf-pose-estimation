@@ -65,7 +65,7 @@ if __name__ == '__main__':
                         (0, 255, 0), 2)
             # cv2.imshow('tf-pose-estimation result', image)
             if not out:
-                out = cv2.VideoWriter('../images/output5.avi', fourcc, 15.0, (w, h))
+                out = cv2.VideoWriter('../images/outputtttt.avi', fourcc, 15.0, (w, h))
             out.write(image)
             fps_time = time.time()
             if cv2.waitKey(1) == 27:

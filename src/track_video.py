@@ -30,29 +30,64 @@ class Target(object):
         def _d(bp1, bp2):
             return ((bp1.x - bp2.x)**2 + (bp1.y - bp2.y)**2)**0.5
         indices = set(self.human.body_parts.keys()) & set(human.body_parts.keys())
-        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices) if len(indices) != 0 else 0 #np.sqrt(2)
+        avg_d = sum([_d(self.human.body_parts[i], human.body_parts[i]) for i in indices]) / len(indices) if len(indices) != 0 else np.sqrt(2)
         return avg_d
 
 
 def connect(humans, previous_targets):
-    print('connect start!!!')
+    print('******************** connect start!!! ********************')
     hs = humans
+    targets = []
+
     m = np.array([np.array([p.d(h) for p in previous_targets]) for h in humans])
+    print(np.array(m))
     targets = []
     for k, h in enumerate(hs):
         if not previous_targets:
-            print('previous target is empty')
             targets.append(Target(h, k))
             continue
         i, j = min_element(m)
-        print('connect to previous number: {}'.format(previous_targets[j].number))
-        
-        targets.append(Target(humans[i], previous_targets[j].number))
+        # print('connect to previous number: {}'.format(previous_targets[j ].number))
+        # print('length: %f' % m[i][j])
+        connection_number = len(hs) if m[i][j] > 0.3 else previous_targets[j].number
+        # connection_number = previous_targets[j].number
+        # print('connect to previous number: {}'.format(connection_number))
+        targets.append(Target(humans[i], connection_number))
         m = submatrix(m, i, j)
+        # print(np.array(m))
         humans = list(map(lambda t: t[1], filter(lambda t: t[0] != i, enumerate(humans))))
         previous_targets = list(map(lambda t: t[1], filter(lambda t: t[0] != j, enumerate(previous_targets))))
     return targets
 
+
+def restore_targets(humans, previous_targets, previous_targets_stock):
+    print('restore')
+    if not previous_targets:
+        return connect(humans, previous_targets)
+
+    hs = humans
+    for stock in reversed(previous_targets_stock):
+        targets = []
+        humans = hs
+        table = np.array([np.array([s.d(h) for s in stock]) for h in humans])
+        print(np.array(table))
+        for k, h in enumerate(hs):
+            i, j = min_element(table)
+            if len(humans) > 0 and len(stock) == 0:
+                targets.append(Target(h, k))
+                continue
+
+            if table.size == 0: break
+            if table[i][j] > 0.3: break
+            targets.append(Target(humans[i], stock[j].number))
+            table = submatrix(table, i, j)
+            humans = list(map(lambda t: t[1], filter(lambda t: t[0] != i, enumerate(humans))))
+            stock = list(map(lambda t: t[1], filter(lambda t: t[0] != j, enumerate(stock))))
+            # if table.size == 0:# or len(humans) == 0 or len(stock) == 0:
+        if table.size == 0 and len(humans) == 0:
+            return targets
+    return targets
+    
 
 def min_element(m):
     return (0, 0) if m.size == 0 else np.unravel_index(np.argmin(m, axis=None), m.shape)
@@ -63,14 +98,6 @@ def submatrix(m, i, j):
     m = list(filter(lambda t: t[0] != i, enumerate(m)))
     m = list(map(lambda x: x[1], m))
     return np.array(m)
-
-
-def replace2(m, i, j):
-    if m.size == 0:
-        return m
-    m[i, :] = 2
-    m[:, j] = 2
-    return m
 
 
 def stringToBool(input_str):
@@ -110,8 +137,9 @@ if __name__ == '__main__':
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     out = None
     targets = None
+    previous_humans = []
     previous_targets = []
-    targets_stock = deque([])
+    previous_targets_stock = deque([])
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
     logger.info('file read start')
@@ -124,17 +152,10 @@ if __name__ == '__main__':
 
             if args.showBG == False: image = np.zeros(image.shape)
             image = TfPoseEstimator.draw_humans(image, humans, imgcopy=False)
-            targets = connect(humans, previous_targets)
+            for pt in previous_targets:
+                print(pt.number)
 
-            # 最大5フレーム分のtargetsを保管しておく
-            if len(targets_stock) == 5: targets_stock.popleft()
-            targets_stock.append(targets)
-
-            for stock in deque(reversed(targets_stock)):
-                # 人数が減っていたら過去の検出情報を採用する
-                if len(targets) >= len(stock): continue
-                targets = stock
-                break
+            targets = restore_targets(humans, previous_targets, previous_targets_stock) if len(humans) != len(previous_humans) else connect(humans, previous_targets)
 
             image = draw_numbers(image, targets)
             logger.debug('show+')
@@ -142,9 +163,13 @@ if __name__ == '__main__':
                         "FPS: %f" % (1.0 / (time.time() - fps_time)),
                         (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                         (0, 255, 0), 2)
+
+            if len(previous_targets_stock) == 8: previous_targets_stock.popleft()
+            previous_targets_stock.append(targets)
+            previous_humans = humans
             previous_targets = targets
             if not out:
-                out = cv2.VideoWriter('../images/output12.avi', fourcc, 15.0, (w, h))
+                out = cv2.VideoWriter('../images/output23.avi', fourcc, 15.0, (w, h))
             out.write(image)
             fps_time = time.time()
             if cv2.waitKey(1) == 27:
